@@ -9,7 +9,7 @@
     <header>
       Example from <a href="http://amzn.com/1430236655?tag=html5anim-20"><em>Foundation HTML5 Animation with JavaScript</em></a>
     </header>
-    <canvas id="canvas" width="400" height="400"></canvas>
+    <canvas id="canvas" width="600" height="600"></canvas>
     <aside>Move mouse on canvas element.</aside>
 
     <script src="../include/utils.js"></script>
@@ -19,36 +19,97 @@
       var canvas = document.getElementById('canvas'),
           context = canvas.getContext('2d'),
           mouse = utils.captureMouse(canvas),
-          segment0 = new Segment(100, 20),
-          segment1 = new Segment(100, 20);
+          baseHeight = 103.0,
+          rearLength = 135.0,
+          frontLength = 160.0,
+          base = new Segment(baseHeight, 20);
+          front = new Segment(frontLength, 20),
+          rear = new Segment(rearLength, 20),
+          toDegrees = 180.0 / Math.PI,
+          stepperMotorStepsPerRevolution = 200,
+          microsteppingMultiplier = 16,
+          stepperPlanetaryGearBoxMultiplier = 10,
+          baseActualStepsPerRevolution = stepperMotorStepsPerRevolution * microsteppingMultiplier * stepperPlanetaryGearBoxMultiplier,
+          degreesPerStep = (Math.PI * 2.0) / baseActualStepsPerRevolution;
 
-      segment1.x = canvas.width / 2;
-      segment1.y = canvas.height / 2;                                                       
+      // segment1.x = canvas.width / 2;
+      // segment1.y = canvas.height / 2;
+
+      base.color = '#dddddd';
+
+      base.x = 200;
+      base.y = 400;
+      base.rotation = Math.PI / 2.0;
+
+      rear.x = 200;
+      rear.y = 400;
+
+      mouse.x = 450;
+      mouse.y = 400;
+
+      function getCoordinatesFromAngles(rearArmAngle, foreArmAngle) {
+        return {
+          x: rearLength * Math.cos(rearArmAngle) + frontLength * Math.cos(foreArmAngle),
+          y: rearLength * Math.sin(rearArmAngle) + baseHeight - frontLength * Math.sin(foreArmAngle)
+        }
+      }
+
+      function text(str, lineNo) {
+        context.save();
+        
+        context.font = "20px Arial";
+        context.fillText(str, 5, lineNo * 20);
+
+        context.restore();
+      };
       
       (function drawFrame () {
         window.requestAnimationFrame(drawFrame, canvas);
         context.clearRect(0, 0, canvas.width, canvas.height);
         
-        var dx = mouse.x - segment1.x,
-            dy = mouse.y - segment1.y,
+        var dx = mouse.x - rear.x,
+            dy = mouse.y - rear.y,
             dist = Math.sqrt(dx * dx + dy * dy),
-            a = 100,
-            b = 100,
+            a = rearLength,
+            b = frontLength,
             c = Math.min(dist, a + b),
             B = Math.acos((b * b - a * a - c * c) / (-2 * a * c)),
             C = Math.acos((c * c - a * a - b * b) / (-2 * a * b)),
             D = Math.atan2(dy, dx),
             E = D - B + Math.PI - C;
         
-        segment1.rotation = (D - B);
+        rear.rotation = (D - B);
 
-        var target = segment1.getPin();
-        segment0.x = target.x;
-        segment0.y = target.y;
-        segment0.rotation = E;
-        
-        segment0.draw(context);
-        segment1.draw(context);
+        var target = rear.getPin();
+        front.x = target.x;
+        front.y = target.y;
+        front.rotation = E;
+
+        // Ground.
+        context.save();
+        context.beginPath();
+        context.moveTo(0, 400 + baseHeight);
+        context.lineTo(600, 400 + baseHeight);
+        context.closePath();
+        context.stroke();
+        context.restore();
+
+        rearAngle = (B - D);
+
+        text('rear angle: ' + (rearAngle * toDegrees).toFixed(4), 1);
+        text('front angle: ' + (E * toDegrees).toFixed(4), 2);
+        ret = getCoordinatesFromAngles(rearAngle, E);
+        text('x: ' + ret.x.toFixed(4), 3);
+        text('y: ' + ret.y.toFixed(4), 4);
+        text('degreesPerStep: ' + degreesPerStep, 5);
+        retR = getCoordinatesFromAngles(rearAngle + degreesPerStep, E);
+        retF = getCoordinatesFromAngles(rearAngle, E + degreesPerStep);
+        text('diff X per Step rear step: ' + Math.abs(retR.x - ret.x).toFixed(4), 6);
+        text('diff X per Step front step: ' + Math.abs(retF.x - ret.x).toFixed(4), 7);
+
+        base.draw(context);
+        rear.draw(context);
+        front.draw(context);
       }());
     };
     </script>

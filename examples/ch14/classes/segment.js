@@ -8,7 +8,7 @@ function Segment (width, height, color) {
   this.rotation = 0;
   this.scaleX = 1;
   this.scaleY = 1;
-  this.color = (color === undefined) ? "#ffffff" : utils.parseColor(color);
+  this.color = (color === undefined) ? "#dddddd" : utils.parseColor(color);
   this.lineWidth = 1;
 }
 
